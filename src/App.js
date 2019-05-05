@@ -5,9 +5,9 @@ import Editor from './app/editor/Editor';
 import { Container } from 'reactstrap';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faLink, faQuoteLeft } from '@fortawesome/free-solid-svg-icons';
+import { faLink, faQuoteLeft, faTimes } from '@fortawesome/free-solid-svg-icons';
 
-library.add([faLink, faQuoteLeft]);
+library.add([faLink, faQuoteLeft, faTimes]);
 
 
 function App() {
