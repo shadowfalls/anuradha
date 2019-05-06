@@ -5,5 +5,7 @@ export default class Edit {
         this.gist = data && data.gist ? data.gist : '';
         this.gistText = '';
         this.isGist = data && typeof data.isGist === 'boolean' ? data.isGist : false;
+        this.isMainHeading = data && typeof data.isMainHeading === 'boolean' ? data.isGist : false;
+        this.isSubHeading = data && typeof data.isSubHeading === 'boolean' ? data.isGist : false;
     }
 }

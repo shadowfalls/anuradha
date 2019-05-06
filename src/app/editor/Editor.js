@@ -34,6 +34,8 @@ export default class Editor extends React.Component {
         this.setAsGist = this.setAsGist.bind(this);
         this.onGistTextChange = this.onGistTextChange.bind(this);
         this.onCreateGist = this.onCreateGist.bind(this);
+        this.onSetAsTitle = this.onSetAsTitle.bind(this);
+        this.onSetAsSubHeading = this.onSetAsSubHeading.bind(this);
     }
 
     onEnterClick(index) {
@@ -109,8 +111,11 @@ export default class Editor extends React.Component {
 
     setQuote() {
         this.setState((preState) => {
-            if (preState.blog[preState.focusedIndex])
+            if (preState.blog[preState.focusedIndex]) {
+                if(!preState.blog[preState.focusedIndex].isQuoted)
+                    this.resetLine(preState.blog[preState.focusedIndex]);
                 preState.blog[preState.focusedIndex].isQuoted = !preState.blog[preState.focusedIndex].isQuoted;
+            }
             return preState;
         });
     }
@@ -142,6 +147,15 @@ export default class Editor extends React.Component {
 
     }
 
+    resetLine(line) {
+        line.isQuoted = false;
+        line.gistText = '';
+        line.gist = '';
+        line.isGist = false;
+        line.isMainHeading = false;
+        line.isSubHeading = false;
+    }
+
     onGistTextChange(value, index) {
         this.setState(preState => {
             preState.blog[index].gistText = value;
@@ -151,6 +165,10 @@ export default class Editor extends React.Component {
 
     setAsGist() {
         this.setState(preState => {
+            if (preState.blog[preState.focusedIndex].isGist){
+                this.resetLine(preState.blog[preState.focusedIndex]);
+                return preState;
+            }
             preState.blog[preState.focusedIndex].html = '';
             preState.blog[preState.focusedIndex].isGist = !!!preState.blog[preState.focusedIndex].isGist;
             return preState;
@@ -162,17 +180,20 @@ export default class Editor extends React.Component {
             let temp = preState.blog[index].gistText;
             if (!temp){
                 alert('Invalid gist');
+                this.resetLine(preState.blog[index]);
                 return preState;
             }
             const isGist = temp.indexOf('gist.github.com')
             if (isGist < 0) {
                 alert('Invalid gist');
+                this.resetLine(preState.blog[index]);
                 return preState;
             }
             temp = temp.substring(isGist, temp.length);
             temp = temp.split('/');
             if (temp.length !== 3) {
                 alert('Invalid gist');
+                this.resetLine(preState.blog[index]);
                 return preState;
             }
             // we need only the gist id
@@ -193,6 +214,28 @@ export default class Editor extends React.Component {
             });
         else
             this.removeItem(index);
+    }
+
+    onSetAsSubHeading() {
+        if (!this.state.blog[this.state.focusedIndex])
+            return;
+        this.setState(preState => {
+            const temp = preState.blog[preState.focusedIndex].isSubHeading;
+            this.resetLine(preState.blog[preState.focusedIndex]);
+            preState.blog[preState.focusedIndex].isSubHeading = !!!temp;
+            return preState;
+        });
+    }
+
+    onSetAsTitle() {
+        if (!this.state.blog[this.state.focusedIndex])
+            return;
+        this.setState(preState => {
+            const temp = preState.blog[preState.focusedIndex].isMainHeading;
+            this.resetLine(preState.blog[preState.focusedIndex]);
+            preState.blog[preState.focusedIndex].isMainHeading = !!!temp;
+            return preState;
+        });
     }
 
     render() {
@@ -255,6 +298,7 @@ export default class Editor extends React.Component {
                     <Button outline onClick={(e) => this.setStyle(e, 'bold')} color="secondary" title="Bold text"><b>B</b></Button>
                     <Button outline onClick={(e) => this.setStyle(e, 'italic')} color="secondary" title="Italic text"><i>I</i></Button>
                     <Button outline onClick={(e) => this.setStyle(e, 'underline')} color="secondary" title="Underline text"><u>u</u></Button>
+                    <span class="sub-div"></span>
                     <Button outline onClick={this.onCreateLink} color="secondary" title="Underline text">
                         <FontAwesomeIcon icon="link" />
                     </Button>
@@ -263,6 +307,10 @@ export default class Editor extends React.Component {
                         color="secondary" title="Underline text">
                         <FontAwesomeIcon icon="quote-left" />
                     </Button>
+                    <span class="sub-div"></span>
+                    <Button className="main-heading-btn" disabled={isNaN(this.state.focusedIndex)} outline color="secondary" title="Main heading" onClick={this.onSetAsTitle}>T</Button>
+                    <Button className="sub-heading-btn" disabled={isNaN(this.state.focusedIndex)} outline color="secondary" title="Sub heading" onClick={this.onSetAsSubHeading}>T</Button>
+                    <span class="sub-div"></span>
                     <Button disabled={isNaN(this.state.focusedIndex)} outline onClick={this.setAsGist} color="info" title="Underline text">
                         gist
                     </Button>

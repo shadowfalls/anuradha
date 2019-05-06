@@ -85,6 +85,10 @@ export default class Editable extends React.Component {
             classList.push('mt-3');
         if (this.props.data.isQuoted)
             classList.push('quote');
+        if (this.props.data.isMainHeading)
+            classList.push('main-heading');
+        if (this.props.data.isSubHeading)
+            classList.push('sub-heading');
 
         return <div className={classList.join(' ')}>
             <ContentEditable
