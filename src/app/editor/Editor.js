@@ -1,15 +1,19 @@
 import React from 'react';
-import { Col, Row, Button, FormGroup, Label, Input } from 'reactstrap';
+import { Col, Row, Button, FormGroup, Label, Input, Container } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Gist from 'react-gist';
+import moment from 'moment';
 
 import * as constants from '../core/constants';
 import Editable from './Editable';
 import Edit from '../models/edit.modal';
+import ArticleService from '../services/article.service';
 
 import './Editor.scss';
 
 export default class Editor extends React.Component {
+
+    articleService = new ArticleService();
 
     constructor(props) {
         super(props);
@@ -57,8 +61,8 @@ export default class Editor extends React.Component {
         this.setState((preState) => {
             if (preState.blog.length <= 2)
                 return preState;
-            if (index === preState.blog.length - 2 
-                && preState.blog[index-1].isGist)
+            if (index === preState.blog.length - 2
+                && preState.blog[index - 1].isGist)
                 return preState;
             preState.blog.splice(index, 1);
             preState.focusToIndex = index - 1;
@@ -112,7 +116,7 @@ export default class Editor extends React.Component {
     setQuote() {
         this.setState((preState) => {
             if (preState.blog[preState.focusedIndex]) {
-                if(!preState.blog[preState.focusedIndex].isQuoted)
+                if (!preState.blog[preState.focusedIndex].isQuoted)
                     this.resetLine(preState.blog[preState.focusedIndex]);
                 preState.blog[preState.focusedIndex].isQuoted = !preState.blog[preState.focusedIndex].isQuoted;
             }
@@ -144,7 +148,26 @@ export default class Editor extends React.Component {
     }
 
     onSave() {
-
+        this.articleService.createArticle({
+            title: this.state.blogTitle,
+            categoryId: '',
+            content: this.state.blog.map(line => {
+                return {
+                    html: line.html, 
+                    isQuoted: line.isQuoted,
+                    isGist: line.isGist,
+                    isMainHeading: line.isMainHeading,
+                    isSubHeading: line.isSubHeading,
+                    gist: line.isGist ? line.gist : undefined
+                };
+            }),
+            readTimeMin: 8,
+            date: moment().format('YYYY-MM-DD'),
+        })
+            .then(res => {
+            })
+            .catch((err) => {
+            });
     }
 
     resetLine(line) {
@@ -165,7 +188,7 @@ export default class Editor extends React.Component {
 
     setAsGist() {
         this.setState(preState => {
-            if (preState.blog[preState.focusedIndex].isGist){
+            if (preState.blog[preState.focusedIndex].isGist) {
                 this.resetLine(preState.blog[preState.focusedIndex]);
                 return preState;
             }
@@ -178,7 +201,7 @@ export default class Editor extends React.Component {
     onCreateGist(index) {
         this.setState(preState => {
             let temp = preState.blog[index].gistText;
-            if (!temp){
+            if (!temp) {
                 alert('Invalid gist');
                 this.resetLine(preState.blog[index]);
                 return preState;
@@ -200,7 +223,7 @@ export default class Editor extends React.Component {
             preState.blog[index].gist = temp[2];
             // if the gist is added at the last line we need to add a extra line at the end to
             // enable further editing
-            if (index  === preState.blog.length - 2)
+            if (index === preState.blog.length - 2)
                 preState.blog.push(new Edit({ html: '', isQuoted: false }));
             return preState;
         });
@@ -248,7 +271,7 @@ export default class Editor extends React.Component {
                     </Col>
                     <Col xs="1">
                         <Button className="remove-gist-mt-8"
-                        onClick={() => this.removeGist(index)} title="Remove gist" color="danger">
+                            onClick={() => this.removeGist(index)} title="Remove gist" color="danger">
                             <FontAwesomeIcon icon="times" />
                         </Button>
                     </Col>
@@ -284,7 +307,12 @@ export default class Editor extends React.Component {
             </Row>
         });
         delete this.state.focusToIndex;
-        return <div className="editor">
+        return <Container><div className="editor">
+            <Row className="mb-4">
+                <Col xs="6">
+                    <Button color="secondary"><FontAwesomeIcon icon="arrow-left" />&nbsp;Back </Button>
+                </Col>
+            </Row>
             <Row>
                 <Col xs="6">
                     <FormGroup>
@@ -298,7 +326,7 @@ export default class Editor extends React.Component {
                     <Button outline onClick={(e) => this.setStyle(e, 'bold')} color="secondary" title="Bold text"><b>B</b></Button>
                     <Button outline onClick={(e) => this.setStyle(e, 'italic')} color="secondary" title="Italic text"><i>I</i></Button>
                     <Button outline onClick={(e) => this.setStyle(e, 'underline')} color="secondary" title="Underline text"><u>u</u></Button>
-                    <span class="sub-div"></span>
+                    <span className="sub-div"></span>
                     <Button outline onClick={this.onCreateLink} color="secondary" title="Underline text">
                         <FontAwesomeIcon icon="link" />
                     </Button>
@@ -307,10 +335,10 @@ export default class Editor extends React.Component {
                         color="secondary" title="Underline text">
                         <FontAwesomeIcon icon="quote-left" />
                     </Button>
-                    <span class="sub-div"></span>
+                    <span className="sub-div"></span>
                     <Button className="main-heading-btn" disabled={isNaN(this.state.focusedIndex)} outline color="secondary" title="Main heading" onClick={this.onSetAsTitle}>T</Button>
                     <Button className="sub-heading-btn" disabled={isNaN(this.state.focusedIndex)} outline color="secondary" title="Sub heading" onClick={this.onSetAsSubHeading}>T</Button>
-                    <span class="sub-div"></span>
+                    <span className="sub-div"></span>
                     <Button disabled={isNaN(this.state.focusedIndex)} outline onClick={this.setAsGist} color="info" title="Underline text">
                         gist
                     </Button>
@@ -323,7 +351,8 @@ export default class Editor extends React.Component {
                     <Col xs="12"><Button color="info" onClick={this.onSave}>Save</Button></Col>
                 </Row>
             </div>
-        </div>;
+        </div>
+        </Container>;
     }
 }
 

@@ -45,15 +45,14 @@ module.exports = {
             chunkFilename: "[id].css"
         }),
         // remove this during production
-        new webpack.HotModuleReplacementPlugin(),
-        new UglifyJsPlugin({ sourceMap: true })
+        new webpack.HotModuleReplacementPlugin()
     ],
     optimization: {
         splitChunks: {
             chunks: "all",
             minSize: 0
         },
-        minimize: true,
+        minimize: false,
         minimizer: [
             // new UglifyJsPlugin({
             //     uglifyOptions: {
@@ -70,5 +69,7 @@ module.exports = {
     mode: "development",
     devServer: {
         hot: true,
-    }
+        historyApiFallback: true
+    },
+    devtool: 'source-map'
 };

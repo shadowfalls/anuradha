@@ -5,6 +5,7 @@ class AppConstants {
         underline: 'underline',
         createLink: 'createLink'
     };
+    BASE_URL = process.env.REACT_APP_BASE_URL;
 }
 
 const constants = new AppConstants();

@@ -1,20 +1,21 @@
 import React from 'react';
 
-import Editor from './app/editor/Editor';
-
-import { Container } from 'reactstrap';
+import { BrowserRouter, Route, Switch } from "react-router-dom";
 
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faLink, faQuoteLeft, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faLink, faQuoteLeft, faTimes, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
-library.add([faLink, faQuoteLeft, faTimes]);
+library.add([faLink, faQuoteLeft, faTimes, faArrowLeft]);
 
+import Editor from './app/editor/Editor';
 
 function App() {
   return (
-    <Container>
-      <Editor />
-    </Container>
+    <BrowserRouter>
+      <Switch>
+        <Route exact path='/' component={Editor} />
+      </Switch>
+    </BrowserRouter>
   );
 }
 
