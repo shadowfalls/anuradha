@@ -6,6 +6,9 @@ class AppConstants {
         createLink: 'createLink'
     };
     BASE_URL = process.env.REACT_APP_BASE_URL;
+    routeLinks = {
+        blogPage: '/blog'
+    };
 }
 
 const constants = new AppConstants();

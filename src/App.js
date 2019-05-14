@@ -8,12 +8,14 @@ import { faLink, faQuoteLeft, faTimes, faArrowLeft } from '@fortawesome/free-sol
 library.add([faLink, faQuoteLeft, faTimes, faArrowLeft]);
 
 import Editor from './app/editor/Editor';
+import BlogList from './app/blogList/BlogList';
 
 function App() {
   return (
     <BrowserRouter>
       <Switch>
-        <Route exact path='/' component={Editor} />
+        <Route exact path='/blog' component={Editor} />
+        <Route exact path='/' component={BlogList} />
       </Switch>
     </BrowserRouter>
   );

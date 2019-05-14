@@ -1,19 +1,22 @@
 import React from 'react';
-import { Col, Row, Button, FormGroup, Label, Input, Container } from 'reactstrap';
+import { Col, Row, Button, FormGroup, Label, Input, Container, InputGroup, InputGroupAddon } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Gist from 'react-gist';
 import moment from 'moment';
+import DatePicker from 'react-datepicker';
 
 import * as constants from '../core/constants';
 import Editable from './Editable';
 import Edit from '../models/edit.modal';
 import ArticleService from '../services/article.service';
+import Utils from '../core/utils';
 
 import './Editor.scss';
 
 export default class Editor extends React.Component {
 
     articleService = new ArticleService();
+    utils = new Utils();
 
     constructor(props) {
         super(props);
@@ -21,10 +24,15 @@ export default class Editor extends React.Component {
             blog: [new Edit({ html: '', isQuoted: false }), new Edit({ html: '', isQuoted: false })],
             errors: {},
             blogTitle: '',
-            focusedIndex: 0
+            focusedIndex: 0,
+            readTimeMin: 0,
+            categoryList: [],
+            date: '',
+            newCategory: ''
         };
         this.onEnterClick = this.onEnterClick.bind(this);
         this.onChange = this.onChange.bind(this);
+        this.onBlogChange = this.onBlogChange.bind(this);
         this.removeItem = this.removeItem.bind(this);
         this.setFocusToEnd = this.setFocusToEnd.bind(this);
         this.onCreateLink = this.onCreateLink.bind(this);
@@ -40,6 +48,41 @@ export default class Editor extends React.Component {
         this.onCreateGist = this.onCreateGist.bind(this);
         this.onSetAsTitle = this.onSetAsTitle.bind(this);
         this.onSetAsSubHeading = this.onSetAsSubHeading.bind(this);
+        this.onDateChange = this.onDateChange.bind(this);
+        this.onComboChange = this.onComboChange.bind(this);
+    }
+
+    componentDidMount() {
+        const params = new URLSearchParams(this.props.location.search);
+        if (params && params.get && params.get('id')){
+            this.id = params.get('id');
+            this.fetchBlog(params.get('id'));
+        }
+        this.articleService.getCategoryList()
+            .then(res => {
+                if (res.data && res.data.data && res.data.data.length)
+                    this.setState({
+                        categoryList: res.data.data
+                    });
+            })
+            .catch(err => { });
+    }
+
+    fetchBlog(id) {
+        if (id)
+            this.articleService.getBlogArticle(id)
+                .then(res => {
+                    if (res && res.data)
+                        this.setState({
+                            blog: res.data.content ? res.data.content : [],
+                            blogTitle: res.data.title ? res.data.title : '',
+                            readTimeMin: res.data.readTimeMin ? res.data.readTimeMin : 0,
+                            date: res.data.date ? this.utils.getDate(res.data.date) : this.utils.getDate(),
+                            category: res.data.categoryId ? res.data.categoryId : ''
+                        });
+                })
+                .catch((err) => {
+                });
     }
 
     onEnterClick(index) {
@@ -50,9 +93,31 @@ export default class Editor extends React.Component {
         });
     }
 
-    onChange(value, index) {
+    onBlogChange(value, index) {
         this.setState((preState) => {
             preState.blog[index].html = value;
+            return preState;
+        });
+    }
+    
+    onComboChange(event) {
+        const name = event.target.name;
+        const val = event.target.selectedOptions[0].value
+        this.setState(preState => {
+            if (preState) {
+                preState[name] = val;
+            }
+            return preState;
+        });
+    }
+
+    onChange(event) {
+        const name = event.target.name;
+        const val = event.target.value;
+        this.setState(preState => {
+            if (preState) {
+                preState[name] = val;
+            }
             return preState;
         });
     }
@@ -148,22 +213,44 @@ export default class Editor extends React.Component {
     }
 
     onSave() {
-        this.articleService.createArticle({
-            title: this.state.blogTitle,
-            categoryId: '',
-            content: this.state.blog.map(line => {
-                return {
-                    html: line.html, 
-                    isQuoted: line.isQuoted,
-                    isGist: line.isGist,
-                    isMainHeading: line.isMainHeading,
-                    isSubHeading: line.isSubHeading,
-                    gist: line.isGist ? line.gist : undefined
-                };
-            }),
-            readTimeMin: 8,
-            date: moment().format('YYYY-MM-DD'),
-        })
+        if (!this.id)
+            this.articleService.createArticle({
+                title: this.state.blogTitle,
+                categoryId: this.state.isAddNewCat ? this.state.newCategory : this.state.category,
+                content: this.state.blog.map(line => {
+                    return {
+                        html: line.html,
+                        isQuoted: line.isQuoted,
+                        isGist: line.isGist,
+                        isMainHeading: line.isMainHeading,
+                        isSubHeading: line.isSubHeading,
+                        gist: line.isGist ? line.gist : undefined
+                    };
+                }),
+                readTimeMin: this.state.readTimeMin,
+                date: this.utils.getDateServer(this.state.date),
+            })
+            .then(res => {
+            })
+            .catch((err) => {
+            });
+        else
+            this.articleService.updateArticle({
+                title: this.state.blogTitle,
+                categoryId: this.state.isAddNewCat ? this.state.newCategory : this.state.category,
+                content: this.state.blog.map(line => {
+                    return {
+                        html: line.html,
+                        isQuoted: line.isQuoted,
+                        isGist: line.isGist,
+                        isMainHeading: line.isMainHeading,
+                        isSubHeading: line.isSubHeading,
+                        gist: line.isGist ? line.gist : undefined
+                    };
+                }),
+                readTimeMin: this.state.readTimeMin,
+                date: this.utils.getDateServer(this.state.date),
+            })
             .then(res => {
             })
             .catch((err) => {
@@ -261,6 +348,18 @@ export default class Editor extends React.Component {
         });
     }
 
+    onDateChange(event) {
+        if (!event)
+            return;
+        const val = event ? event : '';
+        this.setState((prevState) => {
+            if (val) {
+                prevState.date = val;
+            }
+            return prevState;
+        });
+    }
+
     render() {
         const blog = this.state.blog.map((line, index) => {
 
@@ -297,7 +396,7 @@ export default class Editor extends React.Component {
                         disabled={false}
                         isAutoFocus={this.state.blog.length === 2}
                         isLast={index + 1 === this.state.blog.length}
-                        onChange={this.onChange}
+                        onChange={this.onBlogChange}
                         removeItem={this.removeItem}
                         setFocusToEnd={this.setFocusToEnd}
                         setFocusToIndex={this.setFocusToIndex}
@@ -318,6 +417,45 @@ export default class Editor extends React.Component {
                     <FormGroup>
                         <Label>Blog title</Label>
                         <Input type="text" value={this.state.blogTitle} name="blogTitle" placeholder="Enter blog title" onChange={this.onTextChange} />
+                    </FormGroup>
+                </Col>
+                <Col xs="6">
+                    <FormGroup>
+                        <Label>Category</Label>
+                        {!this.state.isAddNewCat ? <InputGroup>
+                            <Input type="select" name="category" selected={this.state.category} onChange={this.onComboChange}>
+                                <option></option>
+                                {this.state.categoryList.map(cat => <option key={cat.catId} value={cat.catId}>{cat.catName}</option>)}
+                            </Input>
+                            <InputGroupAddon addonType="append">
+                                <Button onClick={() => this.setState(preState => {
+                                    preState.isAddNewCat = !preState.isAddNewCat;
+                                    return preState;
+                                })}>Add new</Button>
+                            </InputGroupAddon>
+                        </InputGroup> : <InputGroup>
+                            <Input type="text" name="newCategory" value={this.state.newCategory} onChange={this.onChange} />
+                            <InputGroupAddon addonType="append">
+                                <Button onClick={() => this.setState(preState => {
+                                    preState.isAddNewCat = !preState.isAddNewCat;
+                                    return preState;
+                                })}>Cancel</Button>
+                            </InputGroupAddon>
+                        </InputGroup>}
+                    </FormGroup>
+                </Col>
+                <Col xs="6">
+                    <FormGroup>
+                        <Label>Date</Label><br/>
+                        <DatePicker name="blogDate"
+                            selected={this.utils.getDate(this.state.date)}
+                            onChange={this.onDateChange} />
+                    </FormGroup>
+                </Col>
+                <Col xs="6">
+                    <FormGroup>
+                        <Label>Read mins</Label>
+                        <Input type="number" name="readTimeMin" value={this.state.readTimeMin} onChange={this.onChange} />
                     </FormGroup>
                 </Col>
             </Row>
