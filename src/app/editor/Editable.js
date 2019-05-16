@@ -89,6 +89,8 @@ export default class Editable extends React.Component {
             classList.push('main-heading');
         if (this.props.data.isSubHeading)
             classList.push('sub-heading');
+        if (this.props.data.isCodeSection)
+            classList.push('code-section');
 
         return <div className={classList.join(' ')}>
             <ContentEditable

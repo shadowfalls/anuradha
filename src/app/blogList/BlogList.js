@@ -1,10 +1,12 @@
 import React from 'react';
-import { Col, Row, Container } from 'reactstrap';
+import { Col, Row, Container, Button } from 'reactstrap';
 import moment from 'moment';
 import { Link } from "react-router-dom";
+import './BlogList.scss';
 
 import * as constants from '../core/constants';
 import ArticleService from '../services/article.service';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const articleService = new ArticleService();
 
@@ -45,15 +47,15 @@ export default class BlogList extends React.Component {
         if (this.categoryList && this.categoryList.length) {
             return this.categoryList.map((cat, index) => {
                 return <React.Fragment key={index}>
-                    {<Row>
-                        <Col xs="12" md="12">
-                            <h1>{cat.catName}</h1>
+                    {<Row className="mt-4">
+                        <Col xs="12" md="12" className="heading">
+                            <h4>{cat.catName}</h4>
                         </Col>
                     </Row>}
                     {this.state[cat.catId] && this.state[cat.catId].length && this.state[cat.catId].map((blog, ind) => {
                         return <Row key={ind}>
                             <Col xs="12" md="12">
-                                <Link to={{ pathname: constants.routeLinks.blogPage, search:`?id=${blog.blogId}`}}>{blog.blogName}</Link>
+                                <Link to={{ pathname: constants.routeLinks.blogPage, search: `?id=${blog.blogId}` }}>{blog.blogName}</Link>
                             </Col>
                         </Row>
                     })}
@@ -64,8 +66,21 @@ export default class BlogList extends React.Component {
 
     render() {
         const sections = this.createSection();
-        return <Container>
-            {sections}
+        return <Container className="blog-list">
+            <Row>
+                <Col xs={{ span: 2, offset: 10 }} md={{ span: 2, offset: 10 }}>
+                    <Link to={{ pathname: constants.routeLinks.blogPage }}>
+                        <FontAwesomeIcon icon="plus" />&nbsp;
+                        Add New blog
+                    </Link>
+                </Col>
+            </Row>
+            {sections && sections.length ? sections : 
+            <Row>
+                <Col xs="12" md="12">
+                    No articles yet ...
+                </Col>
+            </Row>}
         </Container>;
     }
 }

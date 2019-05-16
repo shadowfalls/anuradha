@@ -6,8 +6,8 @@ export default class ArticleService {
         return axios.post(`http://localhost:3030/api/create_article`, payload);
     }
 
-    updateArticle(payload) {
-        return axios.put(`http://localhost:3030/api/create_article`, payload);
+    updateArticle(payload, id) {
+        return axios.put(`http://localhost:3030/api/update_article/${id}`, payload);
     }
 
     getCategoryList() {

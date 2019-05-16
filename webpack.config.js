@@ -27,7 +27,19 @@ module.exports = {
             {
                 test: /\.(scss|css)$/,
                 use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
-            }
+            },
+            { test: /\.eot(\?[0-9a-z\-=]+)?$/, loader: 'file-loader' },
+            {
+                test: /\.woff$/,
+                use: {
+                    loader: "url-loader",
+                    options: {
+                        limit: 50000,
+                    },
+                },
+            },
+            { test: /\.ttf(\?[0-9a-z\-=]+)?$/, loader: 'file-loader' },
+            { test: /\.svg(\?[0-9a-z\-=]+)?$/, loader: 'file-loader' },
         ]
     },
     entry: './src/index.js',

@@ -5,6 +5,7 @@ export default class Edit {
     isGist = false;
     isMainHeading = false;
     isSubHeading = false;
+    isCodeSection = false;
     gist = '';
 
     // only needed in the fontend
@@ -18,7 +19,8 @@ export default class Edit {
         this.gist          = data && data.gist ? data.gist : '';
         this.gistText      = '';
         this.isGist        = data && typeof data.isGist === 'boolean' ? data.isGist : false;
-        this.isMainHeading = data && typeof data.isMainHeading === 'boolean' ? data.isGist : false;
-        this.isSubHeading  = data && typeof data.isSubHeading === 'boolean' ? data.isGist : false;
+        this.isMainHeading = data && typeof data.isMainHeading === 'boolean' ? data.isMainHeading : false;
+        this.isCodeSection = data && typeof data.isCodeSection === 'boolean' ? data.isCodeSection : false;
+        this.isSubHeading  = data && typeof data.isSubHeading === 'boolean' ? data.isSubHeading : false;
     }
 }

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Col, Row, Button, FormGroup, Label, Input, Container, InputGroup, InputGroupAddon } from 'reactstrap';
+import { Col, Row, Button, FormGroup, Label, Input, Container, InputGroup, InputGroupAddon,
+    Alert } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Gist from 'react-gist';
 import moment from 'moment';
@@ -17,6 +18,32 @@ export default class Editor extends React.Component {
 
     articleService = new ArticleService();
     utils = new Utils();
+    notificTime = 2000;
+
+    notificService = {
+        error: (title, message) => {
+            const it = title, msg = message;
+            this.setState({
+                errorBlock: { title: it, message: msg }
+            });
+            setTimeout(() => {
+                this.setState({
+                    errorBlock: undefined
+                });
+            }, this.notificTime);
+        },
+        success: (title, message) => {
+            const it = title, msg = message;
+            this.setState({
+                successBlock: { title: it, message: msg }
+            });
+            setTimeout(() => {
+                this.setState({
+                    successBlock: undefined
+                });
+            }, this.notificTime);
+        },
+    };
 
     constructor(props) {
         super(props);
@@ -50,11 +77,13 @@ export default class Editor extends React.Component {
         this.onSetAsSubHeading = this.onSetAsSubHeading.bind(this);
         this.onDateChange = this.onDateChange.bind(this);
         this.onComboChange = this.onComboChange.bind(this);
+        this.onBack = this.onBack.bind(this);
+        this.setAsCodeSection = this.setAsCodeSection.bind(this);
     }
 
     componentDidMount() {
         const params = new URLSearchParams(this.props.location.search);
-        if (params && params.get && params.get('id')){
+        if (params && params.get && params.get('id')) {
             this.id = params.get('id');
             this.fetchBlog(params.get('id'));
         }
@@ -65,7 +94,7 @@ export default class Editor extends React.Component {
                         categoryList: res.data.data
                     });
             })
-            .catch(err => { });
+            .catch(err => this.notificService.error('Could not get categories', 'Could not get categories'));
     }
 
     fetchBlog(id) {
@@ -81,8 +110,7 @@ export default class Editor extends React.Component {
                             category: res.data.categoryId ? res.data.categoryId : ''
                         });
                 })
-                .catch((err) => {
-                });
+                .catch((err) => this.notificService.error('Could not get blog article', 'Could not get blog article'));
     }
 
     onEnterClick(index) {
@@ -99,7 +127,7 @@ export default class Editor extends React.Component {
             return preState;
         });
     }
-    
+
     onComboChange(event) {
         const name = event.target.name;
         const val = event.target.selectedOptions[0].value
@@ -224,16 +252,17 @@ export default class Editor extends React.Component {
                         isGist: line.isGist,
                         isMainHeading: line.isMainHeading,
                         isSubHeading: line.isSubHeading,
+                        isCodeSection: line.isCodeSection,
                         gist: line.isGist ? line.gist : undefined
                     };
                 }),
                 readTimeMin: this.state.readTimeMin,
                 date: this.utils.getDateServer(this.state.date),
             })
-            .then(res => {
-            })
-            .catch((err) => {
-            });
+                .then(res => {
+                    this.notificService.success('Blog article created successfully', 'Blog article created');
+                })
+                .catch((err) => this.notificService.error('Could not create article', 'Could not create article'));
         else
             this.articleService.updateArticle({
                 title: this.state.blogTitle,
@@ -245,16 +274,17 @@ export default class Editor extends React.Component {
                         isGist: line.isGist,
                         isMainHeading: line.isMainHeading,
                         isSubHeading: line.isSubHeading,
+                        isCodeSection: line.isCodeSection,
                         gist: line.isGist ? line.gist : undefined
                     };
                 }),
                 readTimeMin: this.state.readTimeMin,
                 date: this.utils.getDateServer(this.state.date),
-            })
-            .then(res => {
-            })
-            .catch((err) => {
-            });
+            }, this.id)
+                .then(res => {
+                    this.notificService.success('Blog article updated successfully', 'Blog article updated');
+                })
+                .catch((err) => this.notificService.error('Could not update article', 'Could not update article'));
     }
 
     resetLine(line) {
@@ -360,6 +390,21 @@ export default class Editor extends React.Component {
         });
     }
 
+    onBack() {
+        this.props.history.goBack();
+    }
+
+    setAsCodeSection() {
+        if (!this.state.blog[this.state.focusedIndex])
+            return;
+        this.setState(preState => {
+            const temp = preState.blog[preState.focusedIndex].isCodeSection;
+            this.resetLine(preState.blog[preState.focusedIndex]);
+            preState.blog[preState.focusedIndex].isCodeSection = !!!temp;
+            return preState;
+        });
+    }
+
     render() {
         const blog = this.state.blog.map((line, index) => {
 
@@ -409,7 +454,7 @@ export default class Editor extends React.Component {
         return <Container><div className="editor">
             <Row className="mb-4">
                 <Col xs="6">
-                    <Button color="secondary"><FontAwesomeIcon icon="arrow-left" />&nbsp;Back </Button>
+                    <Button onClick={this.onBack} color="link"><FontAwesomeIcon icon="arrow-left" />&nbsp;Back </Button>
                 </Col>
             </Row>
             <Row>
@@ -423,7 +468,7 @@ export default class Editor extends React.Component {
                     <FormGroup>
                         <Label>Category</Label>
                         {!this.state.isAddNewCat ? <InputGroup>
-                            <Input type="select" name="category" selected={this.state.category} onChange={this.onComboChange}>
+                            <Input type="select" name="category" value={this.state.category} onChange={this.onComboChange}>
                                 <option></option>
                                 {this.state.categoryList.map(cat => <option key={cat.catId} value={cat.catId}>{cat.catName}</option>)}
                             </Input>
@@ -434,19 +479,19 @@ export default class Editor extends React.Component {
                                 })}>Add new</Button>
                             </InputGroupAddon>
                         </InputGroup> : <InputGroup>
-                            <Input type="text" name="newCategory" value={this.state.newCategory} onChange={this.onChange} />
-                            <InputGroupAddon addonType="append">
-                                <Button onClick={() => this.setState(preState => {
-                                    preState.isAddNewCat = !preState.isAddNewCat;
-                                    return preState;
-                                })}>Cancel</Button>
-                            </InputGroupAddon>
-                        </InputGroup>}
+                                <Input type="text" name="newCategory" value={this.state.newCategory} onChange={this.onChange} />
+                                <InputGroupAddon addonType="append">
+                                    <Button onClick={() => this.setState(preState => {
+                                        preState.isAddNewCat = !preState.isAddNewCat;
+                                        return preState;
+                                    })}>Cancel</Button>
+                                </InputGroupAddon>
+                            </InputGroup>}
                     </FormGroup>
                 </Col>
                 <Col xs="6">
                     <FormGroup>
-                        <Label>Date</Label><br/>
+                        <Label>Date</Label><br />
                         <DatePicker name="blogDate"
                             selected={this.utils.getDate(this.state.date)}
                             onChange={this.onDateChange} />
@@ -459,6 +504,20 @@ export default class Editor extends React.Component {
                     </FormGroup>
                 </Col>
             </Row>
+            {this.state.successBlock && <Row>
+                <Col xs="12" md="12">
+                    <Alert color="success">
+                        {this.state.successBlock.title}
+                    </Alert>
+                </Col>
+            </Row>}
+            {this.state.errorBlock && <Row>
+                <Col xs="12" md="12">
+                    <Alert color="danger">
+                        {this.state.errorBlock.title}
+                    </Alert>
+                </Col>
+            </Row>}
             <div className="editor__container">
                 <div className="toolbar">
                     <Button outline onClick={(e) => this.setStyle(e, 'bold')} color="secondary" title="Bold text"><b>B</b></Button>
@@ -479,6 +538,9 @@ export default class Editor extends React.Component {
                     <span className="sub-div"></span>
                     <Button disabled={isNaN(this.state.focusedIndex)} outline onClick={this.setAsGist} color="info" title="Underline text">
                         gist
+                    </Button>
+                    <Button disabled={isNaN(this.state.focusedIndex)} outline onClick={this.setAsCodeSection} color="secondary" title="Code section">
+                        <FontAwesomeIcon icon="code" />
                     </Button>
                     <Button disabled={isNaN(this.state.focusedIndex)} onClick={this.addNewLineAbove} outline color="secondary" title="Underline text">
                         new line
