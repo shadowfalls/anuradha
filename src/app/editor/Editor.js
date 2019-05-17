@@ -1,9 +1,10 @@
 import React from 'react';
-import { Col, Row, Button, FormGroup, Label, Input, Container, InputGroup, InputGroupAddon,
-    Alert } from 'reactstrap';
+import {
+    Col, Row, Button, FormGroup, Label, Input, Container, InputGroup, InputGroupAddon,
+    Alert, Modal, ModalHeader, ModalBody, ModalFooter
+} from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Gist from 'react-gist';
-import moment from 'moment';
 import DatePicker from 'react-datepicker';
 
 import * as constants from '../core/constants';
@@ -18,7 +19,7 @@ export default class Editor extends React.Component {
 
     articleService = new ArticleService();
     utils = new Utils();
-    notificTime = 2000;
+    notificTime = 3000;
 
     notificService = {
         error: (title, message) => {
@@ -79,6 +80,11 @@ export default class Editor extends React.Component {
         this.onComboChange = this.onComboChange.bind(this);
         this.onBack = this.onBack.bind(this);
         this.setAsCodeSection = this.setAsCodeSection.bind(this);
+        this.onCategorySave = this.onCategorySave.bind(this);
+        this.onModalToggle = this.onModalToggle.bind(this);
+        this.onCategoryNameEdit = this.onCategoryNameEdit.bind(this);
+        this.onNewCategorySave = this.onNewCategorySave.bind(this);
+        this.onAddCatModalToggle = this.onAddCatModalToggle.bind(this);
     }
 
     componentDidMount() {
@@ -94,7 +100,7 @@ export default class Editor extends React.Component {
                         categoryList: res.data.data
                     });
             })
-            .catch(err => this.notificService.error('Could not get categories', 'Could not get categories'));
+            .catch(err => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not get categories', 'Could not get categories'));
     }
 
     fetchBlog(id) {
@@ -110,7 +116,7 @@ export default class Editor extends React.Component {
                             category: res.data.categoryId ? res.data.categoryId : ''
                         });
                 })
-                .catch((err) => this.notificService.error('Could not get blog article', 'Could not get blog article'));
+                .catch((err) => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not get blog article', 'Could not get blog article'));
     }
 
     onEnterClick(index) {
@@ -244,7 +250,7 @@ export default class Editor extends React.Component {
         if (!this.id)
             this.articleService.createArticle({
                 title: this.state.blogTitle,
-                categoryId: this.state.isAddNewCat ? this.state.newCategory : this.state.category,
+                categoryId: this.state.category,
                 content: this.state.blog.map(line => {
                     return {
                         html: line.html,
@@ -257,16 +263,16 @@ export default class Editor extends React.Component {
                     };
                 }),
                 readTimeMin: this.state.readTimeMin,
-                date: this.utils.getDateServer(this.state.date),
+                date: this.utils.getDateServer(this.state.date)
             })
                 .then(res => {
                     this.notificService.success('Blog article created successfully', 'Blog article created');
                 })
-                .catch((err) => this.notificService.error('Could not create article', 'Could not create article'));
+                .catch((err) => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not create article', 'Could not create article'));
         else
             this.articleService.updateArticle({
                 title: this.state.blogTitle,
-                categoryId: this.state.isAddNewCat ? this.state.newCategory : this.state.category,
+                categoryId: this.state.category,
                 content: this.state.blog.map(line => {
                     return {
                         html: line.html,
@@ -279,12 +285,12 @@ export default class Editor extends React.Component {
                     };
                 }),
                 readTimeMin: this.state.readTimeMin,
-                date: this.utils.getDateServer(this.state.date),
+                date: this.utils.getDateServer(this.state.date)
             }, this.id)
                 .then(res => {
                     this.notificService.success('Blog article updated successfully', 'Blog article updated');
                 })
-                .catch((err) => this.notificService.error('Could not update article', 'Could not update article'));
+                .catch((err) => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not update article', 'Could not update article'));
     }
 
     resetLine(line) {
@@ -405,6 +411,69 @@ export default class Editor extends React.Component {
         });
     }
 
+    onModalToggle() {
+        this.setState((preState) => {
+            preState.isEditCategory = !preState.isEditCategory;
+            preState.editCatName = '';
+            preState.editCatNameId = '';
+            preState.newCategory = '';
+            return preState;
+        });
+    }
+
+    onAddCatModalToggle() {
+        this.setState((preState) => {
+            preState.isAddNewCat = !preState.isAddNewCat;
+            preState.newCategory = '';
+            return preState;
+        });
+    }
+
+    onCategorySave() {
+        this.articleService.updateCategoryName({
+            newName: this.state.editCatName,
+            id: this.state.editCatNameId
+        })
+        .then(res => {
+            this.notificService.success('Category name changed!', '');
+            if (res.data && res.data.data && res.data.data.length)
+                this.setState({
+                    categoryList: res.data.data
+                });
+            this.setState({isEditCategory: false});
+        })
+        .catch(err => {
+            this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not category name', '');
+            console.log(err);
+        });
+    }
+
+    onNewCategorySave() {
+        this.articleService.createCategory({
+            name: this.state.newCategory
+        })
+        .then(res => {
+            this.notificService.success('Category Created!', '');
+            if (res.data && res.data.data && res.data.data.length)
+                this.setState({
+                    categoryList: res.data.data
+                });
+            this.setState({isAddNewCat: false});
+        })
+        .catch(err => {
+            this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not create category', '');
+            console.log(err);
+        });
+    }
+
+    onCategoryNameEdit() {
+        this.setState({
+            editCatNameId: this.state.category,
+            isEditCategory: true,
+            editCatName: ''
+        });
+    }
+
     render() {
         const blog = this.state.blog.map((line, index) => {
 
@@ -452,6 +521,20 @@ export default class Editor extends React.Component {
         });
         delete this.state.focusToIndex;
         return <Container><div className="editor">
+            <EditCategoryName
+                title="Edit category"
+                onSave={this.onCategorySave}
+                toggle={this.onModalToggle}
+                isOpen={this.state.isEditCategory}
+                catName={this.state.editCatName}
+                onChange={(event) => this.setState({editCatName: event.target.value})}  />
+            <EditCategoryName
+                title="New category"
+                onSave={this.onNewCategorySave}
+                toggle={this.onAddCatModalToggle}
+                isOpen={this.state.isAddNewCat}
+                catName={this.state.newCategory}
+                onChange={(event) => this.setState({newCategory: event.target.value})}  />
             <Row className="mb-4">
                 <Col xs="6">
                     <Button onClick={this.onBack} color="link"><FontAwesomeIcon icon="arrow-left" />&nbsp;Back </Button>
@@ -467,7 +550,12 @@ export default class Editor extends React.Component {
                 <Col xs="6">
                     <FormGroup>
                         <Label>Category</Label>
-                        {!this.state.isAddNewCat ? <InputGroup>
+                        <InputGroup>
+                            <InputGroupAddon addonType="prepend">
+                                <Button disabled={!this.state.category} onClick={this.onCategoryNameEdit} color="info">
+                                    <FontAwesomeIcon icon="pen" />
+                                </Button>
+                            </InputGroupAddon>
                             <Input type="select" name="category" value={this.state.category} onChange={this.onComboChange}>
                                 <option></option>
                                 {this.state.categoryList.map(cat => <option key={cat.catId} value={cat.catId}>{cat.catName}</option>)}
@@ -475,23 +563,16 @@ export default class Editor extends React.Component {
                             <InputGroupAddon addonType="append">
                                 <Button onClick={() => this.setState(preState => {
                                     preState.isAddNewCat = !preState.isAddNewCat;
+                                    preState.newCategory = '';
                                     return preState;
-                                })}>Add new</Button>
+                                })} color="info">Add new</Button>
                             </InputGroupAddon>
-                        </InputGroup> : <InputGroup>
-                                <Input type="text" name="newCategory" value={this.state.newCategory} onChange={this.onChange} />
-                                <InputGroupAddon addonType="append">
-                                    <Button onClick={() => this.setState(preState => {
-                                        preState.isAddNewCat = !preState.isAddNewCat;
-                                        return preState;
-                                    })}>Cancel</Button>
-                                </InputGroupAddon>
-                            </InputGroup>}
+                        </InputGroup>
                     </FormGroup>
                 </Col>
                 <Col xs="6">
                     <FormGroup>
-                        <Label>Date</Label><br />
+                        <Label>Publish date</Label><br />
                         <DatePicker name="blogDate"
                             selected={this.utils.getDate(this.state.date)}
                             onChange={this.onDateChange} />
@@ -574,3 +655,20 @@ function GistText(props) {
         {!props.value && <div className="gist-text__background">Paste gist link and press Enter</div>}
     </div>;
 }
+
+function EditCategoryName(props) {
+    return <Modal isOpen={props.isOpen} toggle={props.toggle}>
+        <ModalHeader toggle={props.toggle}>{props.title}</ModalHeader>
+        <ModalBody>
+            <Row>
+                <Col xs="12">
+                    <Input type="string" name="catName" value={props.catName} onChange={props.onChange} />
+                </Col>
+            </Row>
+        </ModalBody>
+        <ModalFooter>
+            <Button color="primary" onClick={props.onSave}>Save</Button>
+            <Button color="secondary" onClick={props.toggle}>Cancel</Button>
+        </ModalFooter>
+    </Modal>
+} 

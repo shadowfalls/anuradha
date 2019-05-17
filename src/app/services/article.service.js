@@ -21,4 +21,12 @@ export default class ArticleService {
     getBlogArticle(blogId) {
         return axios.get(`http://localhost:3030/api/get_article/${blogId}`);
     }
+
+    updateCategoryName(payload) {
+        return axios.put(`http://localhost:3030/api/update_cat_name`, payload);
+    }
+
+    createCategory(payload) {
+        return axios.put(`http://localhost:3030/api/create_category`, payload);
+    }
 }
