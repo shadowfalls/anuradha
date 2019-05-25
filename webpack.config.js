@@ -39,7 +39,7 @@ module.exports = {
                 },
             },
             { test: /\.ttf(\?[0-9a-z\-=]+)?$/, loader: 'file-loader' },
-            { test: /\.svg(\?[0-9a-z\-=]+)?$/, loader: 'file-loader' },
+            { test: /\.svg(\?[0-9a-z\-=]+)?$/, loader: 'file-loader' }
         ]
     },
     entry: './src/index.js',

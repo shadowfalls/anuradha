@@ -56,7 +56,8 @@ export default class Editor extends React.Component {
             readTimeMin: 0,
             categoryList: [],
             date: '',
-            newCategory: ''
+            newCategory: '',
+            description: ''
         };
         this.onEnterClick = this.onEnterClick.bind(this);
         this.onChange = this.onChange.bind(this);
@@ -111,6 +112,7 @@ export default class Editor extends React.Component {
                         this.setState({
                             blog: res.data.content ? res.data.content : [],
                             blogTitle: res.data.title ? res.data.title : '',
+                            description: res.data.description ? res.data.description : '',
                             readTimeMin: res.data.readTimeMin ? res.data.readTimeMin : 0,
                             date: res.data.date ? this.utils.getDate(res.data.date) : this.utils.getDate(),
                             category: res.data.categoryId ? res.data.categoryId : ''
@@ -251,6 +253,7 @@ export default class Editor extends React.Component {
             this.articleService.createArticle({
                 title: this.state.blogTitle,
                 categoryId: this.state.category,
+                description: this.state.description,
                 content: this.state.blog.map(line => {
                     return {
                         html: line.html,
@@ -272,6 +275,7 @@ export default class Editor extends React.Component {
         else
             this.articleService.updateArticle({
                 title: this.state.blogTitle,
+                description: this.state.description,
                 categoryId: this.state.category,
                 content: this.state.blog.map(line => {
                     return {
@@ -582,6 +586,12 @@ export default class Editor extends React.Component {
                     <FormGroup>
                         <Label>Read mins</Label>
                         <Input type="number" name="readTimeMin" value={this.state.readTimeMin} onChange={this.onChange} />
+                    </FormGroup>
+                </Col>
+                <Col xs="12" lg="12">
+                    <FormGroup>
+                        <Label>Read mins</Label>
+                        <Input type="textarea" name="description" value={this.state.description} onChange={this.onChange} />
                     </FormGroup>
                 </Col>
             </Row>
