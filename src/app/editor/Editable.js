@@ -50,7 +50,7 @@ export default class Editable extends React.Component {
                         break;
                     // back space key is pressed
                     case 8:
-                        if (!this.props.data.html)
+                        if (!this.props.data.html || this.props.data.html === "<br>")
                             this.props.removeItem(this.props.index);
                         break;
 

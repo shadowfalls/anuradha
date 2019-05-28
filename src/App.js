@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { BrowserRouter, Route, Switch } from "react-router-dom";
+import { BrowserRouter, HashRouter, Route, Switch } from "react-router-dom";
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faLink, faQuoteLeft, faTimes, faArrowLeft, faPlus, faCode, faPen } from '@fortawesome/free-solid-svg-icons';
@@ -12,12 +12,12 @@ import BlogList from './app/blogList/BlogList';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Switch>
         <Route exact path='/blog' component={Editor} />
         <Route exact path='/' component={BlogList} />
       </Switch>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
