@@ -1,15 +1,15 @@
-class AppConstants {
-    exeCommands = {
-        bold: 'bold',
-        italic: 'italic',
-        underline: 'underline',
-        createLink: 'createLink'
-    };
-    BASE_URL = process.env.REACT_APP_BASE_URL;
-    routeLinks = {
-        blogPage: '/blog'
-    };
-}
+const AppConstants = {
+  exeCommands: {
+    bold: 'bold',
+    italic: 'italic',
+    underline: 'underline',
+    createLink: 'createLink',
+  },
+  routeLinks: {
+    blogPage: '/blog',
+  },
+  baseUrl2: 'http://localhost:3030',
+  baseUrl: 'http://localhost:3939', // use it when editing space blog
+};
 
-const constants = new AppConstants();
-module.exports = constants;
+module.exports = AppConstants;

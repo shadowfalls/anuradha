@@ -35,6 +35,28 @@
     }
 }
 
+.image-text {
+    &__container {
+        position: relative;
+        border: 0;
+        background: transparent;
+        outline: 0px solid transparent;
+        width: 100%;
+    }
+    &__background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        z-index: -1;
+        overflow: hidden;
+        font-size: 1rem;
+        margin-left: 20px;
+        color: #b3b3b1;
+    }
+}
+
 .editor {
     margin-top: 5rem;
     &__container {
