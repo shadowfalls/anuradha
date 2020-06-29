@@ -1,17 +1,18 @@
 import React from 'react';
 import {
   Col, Row, Button, FormGroup, Label, Input, Container, InputGroup, InputGroupAddon,
-  Alert, Modal, ModalHeader, ModalBody, ModalFooter,
+  Alert, Modal, ModalHeader, ModalBody, ModalFooter, CustomInput,
 } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Gist from 'react-gist';
 import DatePicker from 'react-datepicker';
+import { store } from 'react-notifications-component';
 
 import * as constants from '../core/constants';
 import Editable from './Editable';
 import Edit from '../models/edit.modal';
 import ArticleService from '../services/article.service';
-import Utils from '../core/utils';
+import { getDate, getDateServer } from '../core/utils';
 
 import './Editor.scss';
 
@@ -19,33 +20,44 @@ export default class Editor extends React.Component {
   constructor(props) {
     super(props);
 
-    utils = new Utils();
-    notificTime = 3000;
+    this.notificTime = 3000;
 
-    notificService = {
+    this.notificService = {
       error: (title, message) => {
-        const it = title; const
-          msg = message;
-        this.setState({
-          errorBlock: { title: it, message: msg },
+        const it = title;
+        const msg = message;
+
+        store.addNotification({
+          title: it,
+          message: msg,
+          type: 'error',
+          insert: 'bottom',
+          container: 'bottom-left',
+          animationIn: ['animated', 'fadeIn'],
+          animationOut: ['animated', 'fadeOut'],
+          dismiss: {
+            duration: 5000,
+            onScreen: true,
+          },
         });
-        setTimeout(() => {
-          this.setState({
-            errorBlock: undefined,
-          });
-        }, this.notificTime);
       },
       success: (title, message) => {
         const it = title; const
           msg = message;
-        this.setState({
-          successBlock: { title: it, message: msg },
+
+        store.addNotification({
+          title: it,
+          message: msg,
+          type: 'success',
+          insert: 'bottom',
+          container: 'bottom-left',
+          animationIn: ['animated', 'fadeIn'],
+          animationOut: ['animated', 'fadeOut'],
+          dismiss: {
+            duration: 5000,
+            onScreen: true,
+          },
         });
-        setTimeout(() => {
-          this.setState({
-            successBlock: undefined,
-          });
-        }, this.notificTime);
       },
     };
     this.articleService = new ArticleService();
@@ -57,9 +69,10 @@ export default class Editor extends React.Component {
       focusedIndex: 0,
       readTimeMin: 0,
       categoryList: [],
-      date: '',
+      date: new Date(),
       newCategory: '',
       description: '',
+      active: true,
     };
     this.onEnterClick = this.onEnterClick.bind(this);
     this.onChange = this.onChange.bind(this);
@@ -91,6 +104,7 @@ export default class Editor extends React.Component {
     this.setAsImage = this.setAsImage.bind(this);
     this.onImageTextChange = this.onImageTextChange.bind(this);
     this.addImage = this.addImage.bind(this);
+    this.onVisibleToggle = this.onVisibleToggle.bind(this);
   }
 
   componentDidMount() {
@@ -99,6 +113,10 @@ export default class Editor extends React.Component {
       this.id = params.get('id');
       this.fetchBlog(params.get('id'));
     }
+    this.fetchCategories();
+  }
+
+  fetchCategories() {
     this.articleService.getCategoryList()
       .then((res) => {
         if (res.data && res.data.data && res.data.data.length) {
@@ -110,18 +128,36 @@ export default class Editor extends React.Component {
       .catch((err) => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not get categories', 'Could not get categories'));
   }
 
+  onVisibleToggle() {
+    if (!this.id) return;
+    let promise;
+    const { active } = this.state;
+    if (!active) promise = this.articleService.activateArticle(this.id);
+    else promise = this.articleService.deactivateArticle(this.id);
+    if (promise) {
+      promise
+        .then(() => {
+          this.fetchBlog(this.id);
+          this.notificService.success(`Article ${active ? 'Hidden' : 'Shown'}`);
+        })
+        .catch((err) => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not get categories', 'Could not get categories'));
+    }
+  }
+
   fetchBlog(id) {
     if (id) {
       this.articleService.getBlogArticle(id)
         .then((res) => {
-          if (res && res.data) {
+          const data = res.data && res.data.data ? res.data.data : res.data;
+          if (data) {
             this.setState({
-              blog: res.data.content ? res.data.content : [],
-              blogTitle: res.data.title ? res.data.title : '',
-              description: res.data.description ? res.data.description : '',
-              readTimeMin: res.data.readTimeMin ? res.data.readTimeMin : 0,
-              date: res.data.date ? this.utils.getDate(res.data.date) : this.utils.getDate(),
-              category: res.data.categoryId ? res.data.categoryId : '',
+              blog: data.content ? data.content : [],
+              blogTitle: data.title ? data.title : '',
+              description: data.description ? data.description : '',
+              readTimeMin: data.readTimeMin ? data.readTimeMin : 0,
+              date: data.date ? getDate(data.date) : getDate(),
+              category: data.categoryId ? data.categoryId : '',
+              active: data.active,
             });
           }
         })
@@ -170,7 +206,7 @@ export default class Editor extends React.Component {
     this.setState((preState) => {
       if (preState.blog.length <= 2) return preState;
       if (index === preState.blog.length - 2
-                && preState.blog[index - 1].isGist) return preState;
+        && preState.blog[index - 1].isGist) return preState;
       preState.blog.splice(index, 1);
       preState.focusToIndex = index - 1;
       return preState;
@@ -251,6 +287,20 @@ export default class Editor extends React.Component {
   }
 
   onSave() {
+    const check = [
+      'blogTitle',
+      'category',
+      'description',
+      'readTimeMin',
+      'date',
+    ];
+    const hasError = check.find((c) => !this.state[c]);
+    if (hasError || this.state.blog.length <= 1) {
+      this.notificService.error(hasError ? `Check value in ${hasError}`
+        : 'Fill all required fields', 'Fill all required fields');
+      return;
+    }
+
     if (!this.id) {
       this.articleService.createArticle({
         title: this.state.blogTitle,
@@ -268,11 +318,12 @@ export default class Editor extends React.Component {
           gist: line.isGist ? line.gist : undefined,
         })),
         readTimeMin: this.state.readTimeMin,
-        date: this.utils.getDateServer(this.state.date),
+        date: getDateServer(this.state.date),
       })
         .then((res) => {
-          this.id = res.data.id;
-          this.props.history.push(`/blog?id=${res.data.id}`);
+          // @Todo after migrating mirror to use a database need to change this
+          this.id = res.data.id ? res.data.id : (res.data.data ? res.data.data.id : '');
+          if (this.id) this.props.history.push(`/blog?id=${this.id}`);
           this.notificService.success('Blog article created successfully', 'Blog article created');
         })
         .catch((err) => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not create article', 'Could not create article'));
@@ -281,6 +332,7 @@ export default class Editor extends React.Component {
         title: this.state.blogTitle,
         description: this.state.description,
         categoryId: this.state.category,
+        active: this.state.active,
         content: this.state.blog.map((line) => ({
           html: line.html,
           isQuoted: line.isQuoted,
@@ -293,7 +345,7 @@ export default class Editor extends React.Component {
           gist: line.isGist ? line.gist : undefined,
         })),
         readTimeMin: this.state.readTimeMin,
-        date: this.utils.getDateServer(this.state.date),
+        date: getDateServer(this.state.date),
       }, this.id)
         .then(() => {
           this.notificService.success('Blog article updated successfully', 'Blog article updated');
@@ -444,7 +496,7 @@ export default class Editor extends React.Component {
   }
 
   onBack() {
-    this.props.history.goBack();
+    this.props.history.push('/');
   }
 
   setAsCodeSection() {
@@ -488,6 +540,7 @@ export default class Editor extends React.Component {
           });
         }
         this.setState({ isEditCategory: false });
+        this.fetchCategories();
       })
       .catch((err) => {
         this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not category name', '');
@@ -507,6 +560,7 @@ export default class Editor extends React.Component {
           });
         }
         this.setState({ isAddNewCat: false });
+        this.fetchCategories();
       })
       .catch((err) => {
         this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not create category', '');
@@ -578,8 +632,8 @@ export default class Editor extends React.Component {
       if (line.isImage && line.imageUrl) {
         return (
           <Row key={index} className="mt-3 mb-3">
-            <Col xs="11">
-              <img src={line.imageUrl} style={{ width: '100%' }} alt="" />
+            <Col xs="11" className="d-flex justify-content-center">
+              <img src={line.imageUrl} alt="" />
             </Col>
             <Col xs="1">
               <Button
@@ -618,7 +672,7 @@ export default class Editor extends React.Component {
     });
     delete this.state.focusToIndex;
     return (
-      <Container>
+      <Container className="mb-4">
         <div className="editor">
           <EditCategoryName
             title="Edit category"
@@ -680,16 +734,33 @@ export default class Editor extends React.Component {
                 </InputGroup>
               </FormGroup>
             </Col>
-            <Col xs="6">
+            <Col xs="3">
               <FormGroup>
                 <Label>Publish date</Label>
                 <br />
                 <DatePicker
                   name="blogDate"
                   className="form-control"
-                  selected={this.utils.getDate(this.state.date)}
+                  selected={getDate(this.state.date)}
                   onChange={this.onDateChange}
                 />
+              </FormGroup>
+            </Col>
+            <Col xs="3">
+              <FormGroup>
+                {this.id && (
+                <>
+                  <Label>Status</Label>
+                  <CustomInput
+                    type="switch"
+                    name="active"
+                    id="active"
+                    label={(this.state.active ? 'Shown' : 'Hidden')}
+                    checked={this.state.active}
+                    onChange={this.onVisibleToggle}
+                  />
+                </>
+                )}
               </FormGroup>
             </Col>
             <Col xs="6">
@@ -706,22 +777,22 @@ export default class Editor extends React.Component {
             </Col>
           </Row>
           {this.state.successBlock && (
-          <Row>
-            <Col xs="12" md="12">
-              <Alert color="success">
-                {this.state.successBlock.title}
-              </Alert>
-            </Col>
-          </Row>
+            <Row>
+              <Col xs="12" md="12">
+                <Alert color="success">
+                  {this.state.successBlock.title}
+                </Alert>
+              </Col>
+            </Row>
           )}
           {this.state.errorBlock && (
-          <Row>
-            <Col xs="12" md="12">
-              <Alert color="danger">
-                {this.state.errorBlock.title}
-              </Alert>
-            </Col>
-          </Row>
+            <Row>
+              <Col xs="12" md="12">
+                <Alert color="danger">
+                  {this.state.errorBlock.title}
+                </Alert>
+              </Col>
+            </Row>
           )}
           <div className="editor__container">
             <div className="toolbar">

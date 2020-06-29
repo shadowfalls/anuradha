@@ -1,5 +1,5 @@
 import React from 'react';
-
+import ReactNotification from 'react-notifications-component';
 import { HashRouter, Route, Switch } from 'react-router-dom';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -12,12 +12,15 @@ library.add([faLink, faQuoteLeft, faTimes, faArrowLeft, faPlus, faCode, faPen, f
 
 function App() {
   return (
-    <HashRouter>
-      <Switch>
-        <Route exact path="/blog" component={Editor} />
-        <Route exact path="/" component={BlogList} />
-      </Switch>
-    </HashRouter>
+    <>
+      <ReactNotification />
+      <HashRouter>
+        <Switch>
+          <Route exact path="/blog" component={Editor} />
+          <Route exact path="/" component={BlogList} />
+        </Switch>
+      </HashRouter>
+    </>
   );
 }
 

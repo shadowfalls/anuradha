@@ -6,6 +6,7 @@ export default class Edit {
   // isSubHeading = false;
   // isCodeSection = false;
   // isImage = false;
+  // active = true;
   // imageUrl = '';
   // gist = '';
 
@@ -22,6 +23,7 @@ export default class Edit {
     this.isGist = data && typeof data.isGist === 'boolean' ? data.isGist : false;
     this.isImage = data && typeof data.isImage === 'boolean' ? data.isImage : false;
     this.imageUrl = data && data.imageUrl ? data.imageUrl : '';
+    this.active = data && typeof data.active === 'boolean' ? data.active : true;
     this.isMainHeading = data && typeof data.isMainHeading === 'boolean' ? data.isMainHeading : false;
     this.isCodeSection = data && typeof data.isCodeSection === 'boolean' ? data.isCodeSection : false;
     this.isSubHeading = data && typeof data.isSubHeading === 'boolean' ? data.isSubHeading : false;

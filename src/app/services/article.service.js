@@ -29,4 +29,12 @@ export default class ArticleService {
   createCategory(payload) {
     return axios.post(`${baseUrl}/api/create_category`, payload);
   }
+
+  activateArticle(id) {
+    return axios.put(`${baseUrl}/api/activate_article/${id}`);
+  }
+
+  deactivateArticle(id) {
+    return axios.put(`${baseUrl}/api/deactivate_article/${id}`);
+  }
 }
