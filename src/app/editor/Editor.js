@@ -230,7 +230,7 @@ export default class Editor extends React.Component {
       return;
     }
     const seleText = document.getSelection();
-    document.execCommand('insertHTML', false, `<a href="${linkUrl}" title="${linkUrl}" target="_blank">${seleText}</a>`);
+    document.execCommand('insertHTML', false, `<a rel="noopener" href="${linkUrl}" title="${linkUrl}" target="_blank">${seleText}</a>`);
   }
 
   onTextToolbarChange(event) {
