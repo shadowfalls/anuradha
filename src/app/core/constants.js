@@ -8,8 +8,8 @@ const AppConstants = {
   routeLinks: {
     blogPage: '/blog',
   },
-  baseUrl2: 'http://localhost:3030',
-  baseUrl: 'http://localhost:3939', // use it when editing space blog
+  baseUrl: 'http://localhost:7856',
+  baseUrl2: 'http://localhost:3939', // use it when editing space blog
 };
 
 module.exports = AppConstants;
