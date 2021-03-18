@@ -3,12 +3,12 @@ import ReactNotification from 'react-notifications-component';
 import { HashRouter, Route, Switch } from 'react-router-dom';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faLink, faQuoteLeft, faTimes, faArrowLeft, faPlus, faCode, faPen, faFileImage } from '@fortawesome/free-solid-svg-icons';
+import { faLink, faQuoteLeft, faArrowLeft, faPlus, faCode, faPen, faFileImage, faCamera, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
 
 import Editor from './app/editor/Editor';
 import BlogList from './app/blogList/BlogList';
 
-library.add([faLink, faQuoteLeft, faTimes, faArrowLeft, faPlus, faCode, faPen, faFileImage]);
+library.add([faLink, faQuoteLeft, faArrowLeft, faPlus, faCode, faPen, faFileImage, faCamera, faTimes, faCheck]);
 
 function App() {
   return (

@@ -50,22 +50,22 @@ export default class BlogList extends React.Component {
               <h4>{cat.catName}</h4>
             </Col>
           </Row>
-          {this.state[cat.catId] && this.state[cat.catId].length > 0 && this.state[cat.catId].map((blog, ind) => (
-            <>
+          {this.state[cat.catId] && this.state[cat.catId].length > 0 && this.state[cat.catId].map((blog, blogIndex) => (
+            <React.Fragment key={blogIndex}>
               {blog.blogName ? (
-                <Row key={ind}>
+                <Row>
                   <Col xs="12" md="12">
                     <Link to={{ pathname: constants.routeLinks.blogPage, search: `?id=${blog.blogId}` }}>{blog.blogName}</Link>
                   </Col>
                 </Row>
               ) : (
-                <Row key={ind}>
+                <Row>
                   <Col xs="12" md="12">
                     <Link to={{ pathname: constants.routeLinks.blogPage, search: `?id=${blog.id}` }}>{blog.title}</Link>
                   </Col>
                 </Row>
               )}
-            </>
+            </React.Fragment>
           ))}
         </React.Fragment>
       ));
