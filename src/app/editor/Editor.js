@@ -30,7 +30,7 @@ export default class Editor extends React.Component {
         store.addNotification({
           title: it,
           message: msg,
-          type: 'error',
+          type: 'warning',
           insert: 'bottom',
           container: 'bottom-left',
           animationIn: ['animated', 'fadeIn'],
@@ -68,11 +68,16 @@ export default class Editor extends React.Component {
       blogTitle: '',
       focusedIndex: 0,
       readTimeMin: 0,
+      keyWords: '',
+      coverImage: '',
+      tempCoverImage: '',
       categoryList: [],
       date: new Date(),
       newCategory: '',
       description: '',
+      isEditCoverPhoto: false,
       active: true,
+      id: null,
     };
     this.onEnterClick = this.onEnterClick.bind(this);
     this.onChange = this.onChange.bind(this);
@@ -105,12 +110,16 @@ export default class Editor extends React.Component {
     this.onImageTextChange = this.onImageTextChange.bind(this);
     this.addImage = this.addImage.bind(this);
     this.onVisibleToggle = this.onVisibleToggle.bind(this);
+    this.toggleEditCoverImage = this.toggleEditCoverImage.bind(this);
   }
 
   componentDidMount() {
     const params = new URLSearchParams(this.props.location.search);
     if (params && params.get && params.get('id')) {
-      this.id = params.get('id');
+      this.setState((prevState) => {
+        prevState.id = params.get('id');
+        return prevState;
+      });
       this.fetchBlog(params.get('id'));
     }
     this.fetchCategories();
@@ -129,15 +138,15 @@ export default class Editor extends React.Component {
   }
 
   onVisibleToggle() {
-    if (!this.id) return;
+    if (!this.state.id) return;
     let promise;
     const { active } = this.state;
-    if (!active) promise = this.articleService.activateArticle(this.id);
-    else promise = this.articleService.deactivateArticle(this.id);
+    if (!active) promise = this.articleService.activateArticle(this.state.id);
+    else promise = this.articleService.deactivateArticle(this.state.id);
     if (promise) {
       promise
         .then(() => {
-          this.fetchBlog(this.id);
+          this.fetchBlog(this.state.id);
           this.notificService.success(`Article ${active ? 'Hidden' : 'Shown'}`);
         })
         .catch((err) => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not get categories', 'Could not get categories'));
@@ -155,6 +164,9 @@ export default class Editor extends React.Component {
               blogTitle: data.title ? data.title : '',
               description: data.description ? data.description : '',
               readTimeMin: data.readTimeMin ? data.readTimeMin : 0,
+              keyWords: data.keyWords ? data.keyWords : '',
+              coverImage: data.coverImage ? data.coverImage : '',
+              tempCoverImage: data.coverImage ? data.coverImage : '',
               date: data.date ? getDate(data.date) : getDate(),
               category: data.categoryId ? data.categoryId : '',
               active: data.active,
@@ -292,6 +304,8 @@ export default class Editor extends React.Component {
       'category',
       'description',
       'readTimeMin',
+      'keyWords',
+      'tempCoverImage',
       'date',
     ];
     const hasError = check.find((c) => !this.state[c]);
@@ -301,11 +315,12 @@ export default class Editor extends React.Component {
       return;
     }
 
-    if (!this.id) {
+    if (!this.state.id) {
       this.articleService.createArticle({
         title: this.state.blogTitle,
         categoryId: this.state.category,
         description: this.state.description,
+        coverImage: this.state.tempCoverImage,
         content: this.state.blog.map((line) => ({
           html: line.html,
           isQuoted: line.isQuoted,
@@ -318,12 +333,18 @@ export default class Editor extends React.Component {
           gist: line.isGist ? line.gist : undefined,
         })),
         readTimeMin: this.state.readTimeMin,
+        keyWords: this.state.keyWords,
         date: getDateServer(this.state.date),
       })
         .then((res) => {
           // @Todo after migrating mirror to use a database need to change this
-          this.id = res.data.id ? res.data.id : (res.data.data ? res.data.data.id : '');
-          if (this.id) this.props.history.push(`/blog?id=${this.id}`);
+          const id = res.data.id ? res.data.id : (res.data.data ? res.data.data.id : '');
+          if (id) this.props.history.push(`/blog?id=${id}`);
+          this.setState((prevState) => {
+            prevState.id = id;
+            return prevState;
+          });
+          this.fetchBlog(id);
           this.notificService.success('Blog article created successfully', 'Blog article created');
         })
         .catch((err) => this.notificService.error(err && err.response && err.response.data.message ? err.response.data.message : 'Could not create article', 'Could not create article'));
@@ -333,6 +354,7 @@ export default class Editor extends React.Component {
         description: this.state.description,
         categoryId: this.state.category,
         active: this.state.active,
+        coverImage: this.state.tempCoverImage,
         content: this.state.blog.map((line) => ({
           html: line.html,
           isQuoted: line.isQuoted,
@@ -345,8 +367,9 @@ export default class Editor extends React.Component {
           gist: line.isGist ? line.gist : undefined,
         })),
         readTimeMin: this.state.readTimeMin,
+        keyWords: this.state.keyWords,
         date: getDateServer(this.state.date),
-      }, this.id)
+      }, this.state.id)
         .then(() => {
           this.notificService.success('Blog article updated successfully', 'Blog article updated');
         })
@@ -577,6 +600,14 @@ export default class Editor extends React.Component {
     });
   }
 
+  toggleEditCoverImage() {
+    this.setState((prevState) => {
+      if (!prevState.isEditCoverPhoto) prevState.tempCoverImage = prevState.coverImage;
+      prevState.isEditCoverPhoto = !prevState.isEditCoverPhoto;
+      return prevState;
+    });
+  }
+
   render() {
     const blog = this.state.blog.map((line, index) => {
       if (line.isGist && line.gist) {
@@ -671,6 +702,11 @@ export default class Editor extends React.Component {
       );
     });
     delete this.state.focusToIndex;
+
+    const isDisableCoverImageEdit = !(((this.state.id && this.state.isEditCoverPhoto) || !this.state.id));
+    const showEditCoverImageButton = !!(this.state.id && !this.state.isEditCoverPhoto);
+    const showSaveAndCancelCoverImageButtons = !!(this.state.id && this.state.isEditCoverPhoto);
+
     return (
       <Container className="mb-4">
         <div className="editor">
@@ -701,72 +737,115 @@ export default class Editor extends React.Component {
           </Row>
           <Row>
             <Col xs="6">
-              <FormGroup>
-                <Label>Blog title</Label>
-                <Input type="text" value={this.state.blogTitle} name="blogTitle" placeholder="Enter blog title" onChange={this.onTextChange} />
-              </FormGroup>
+              <Col xs="12">
+                <FormGroup>
+                  <Label>Blog title</Label>
+                  <Input type="text" value={this.state.blogTitle} name="blogTitle" placeholder="Enter blog title" onChange={this.onTextChange} />
+                </FormGroup>
+              </Col>
+              <Col xs="12">
+                <FormGroup>
+                  <Label>Category</Label>
+                  <InputGroup>
+                    <InputGroupAddon addonType="prepend">
+                      <Button disabled={!this.state.category} onClick={this.onCategoryNameEdit} color="info">
+                        <FontAwesomeIcon icon="pen" />
+                      </Button>
+                    </InputGroupAddon>
+                    <Input type="select" name="category" value={this.state.category} onChange={this.onComboChange}>
+                      <option />
+                      {this.state.categoryList.map((cat) => <option key={cat.catId} value={cat.catId}>{cat.catName}</option>)}
+                    </Input>
+                    <InputGroupAddon addonType="append">
+                      <Button
+                        onClick={() => this.setState((preState) => {
+                          preState.isAddNewCat = !preState.isAddNewCat;
+                          preState.newCategory = '';
+                          return preState;
+                        })}
+                        color="info"
+                      >
+                        Add new
+                      </Button>
+                    </InputGroupAddon>
+                  </InputGroup>
+                </FormGroup>
+              </Col>
+              <Col xs="12">
+                <FormGroup>
+                  <Label>Publish date</Label>
+                  <br />
+                  <DatePicker
+                    name="blogDate"
+                    className="form-control"
+                    selected={getDate(this.state.date)}
+                    onChange={this.onDateChange}
+                  />
+                </FormGroup>
+              </Col>
+              <Col xs="12">
+                <FormGroup>
+                  {this.state.id && (
+                    <>
+                      <Label>Status</Label>
+                      <CustomInput
+                        type="switch"
+                        name="active"
+                        id="active"
+                        label={(this.state.active ? 'Shown' : 'Hidden')}
+                        checked={this.state.active}
+                        onChange={this.onVisibleToggle}
+                      />
+                    </>
+                  )}
+                </FormGroup>
+              </Col>
+              <Col xs="12">
+                <FormGroup>
+                  <Label>Read mins</Label>
+                  <Input type="number" name="readTimeMin" value={this.state.readTimeMin} onChange={this.onChange} />
+                </FormGroup>
+              </Col>
             </Col>
             <Col xs="6">
-              <FormGroup>
-                <Label>Category</Label>
+              <div
+                className="cover-image"
+                style={this.state.coverImage ? {
+                  backgroundImage: `url('${this.state.coverImage}')`,
+                } : {}}
+              >
+                {!this.state.coverImage && <FontAwesomeIcon icon="camera" />}
+              </div>
+              <FormGroup className="mt-2">
+                <Label>Cover image</Label>
                 <InputGroup>
-                  <InputGroupAddon addonType="prepend">
-                    <Button disabled={!this.state.category} onClick={this.onCategoryNameEdit} color="info">
+                  <Input disabled={isDisableCoverImageEdit} type="text" name="tempCoverImage" value={this.state.tempCoverImage} onChange={this.onChange} />
+                  {showEditCoverImageButton && (
+                  <InputGroupAddon addonType="append">
+                    <Button onClick={this.toggleEditCoverImage} color="info">
                       <FontAwesomeIcon icon="pen" />
                     </Button>
                   </InputGroupAddon>
-                  <Input type="select" name="category" value={this.state.category} onChange={this.onComboChange}>
-                    <option />
-                    {this.state.categoryList.map((cat) => <option key={cat.catId} value={cat.catId}>{cat.catName}</option>)}
-                  </Input>
-                  <InputGroupAddon addonType="append">
-                    <Button
-                      onClick={() => this.setState((preState) => {
-                        preState.isAddNewCat = !preState.isAddNewCat;
-                        preState.newCategory = '';
-                        return preState;
-                      })}
-                      color="info"
-                    >
-                      Add new
-                    </Button>
-                  </InputGroupAddon>
+                  )}
+                  {showSaveAndCancelCoverImageButtons && (
+                  <>
+                    <InputGroupAddon addonType="append">
+                      <Button onClick={this.toggleEditCoverImage} color="info">
+                        <FontAwesomeIcon icon="times" />
+                      </Button>
+                    </InputGroupAddon>
+                    <InputGroupAddon addonType="append">
+                      <Button onClick={this.onSave} color="info">
+                        <FontAwesomeIcon icon="check" />
+                      </Button>
+                    </InputGroupAddon>
+                  </>
+                  )}
                 </InputGroup>
               </FormGroup>
-            </Col>
-            <Col xs="3">
               <FormGroup>
-                <Label>Publish date</Label>
-                <br />
-                <DatePicker
-                  name="blogDate"
-                  className="form-control"
-                  selected={getDate(this.state.date)}
-                  onChange={this.onDateChange}
-                />
-              </FormGroup>
-            </Col>
-            <Col xs="3">
-              <FormGroup>
-                {this.id && (
-                <>
-                  <Label>Status</Label>
-                  <CustomInput
-                    type="switch"
-                    name="active"
-                    id="active"
-                    label={(this.state.active ? 'Shown' : 'Hidden')}
-                    checked={this.state.active}
-                    onChange={this.onVisibleToggle}
-                  />
-                </>
-                )}
-              </FormGroup>
-            </Col>
-            <Col xs="6">
-              <FormGroup>
-                <Label>Read mins</Label>
-                <Input type="number" name="readTimeMin" value={this.state.readTimeMin} onChange={this.onChange} />
+                <Label>Key words</Label>
+                <Input type="textarea" name="keyWords" value={this.state.keyWords} onChange={this.onChange} />
               </FormGroup>
             </Col>
             <Col xs="12" lg="12">

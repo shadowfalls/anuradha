@@ -59,6 +59,17 @@
 
 .editor {
     margin-top: 2rem;
+    .cover-image {
+        border: 2px solid #ced4da;
+        background-color: #ced4da;
+        border-radius: 20px;
+        width: 200px;
+        height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
     &__container {
         border: solid 3px #E0E0E0;
         padding: 1rem;
